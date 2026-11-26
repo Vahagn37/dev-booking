@@ -1,0 +1,32 @@
+using AppointmentBooking.Domain;
+using Microsoft.EntityFrameworkCore;
+
+namespace AppointmentBooking.Infrastructure.Persistence;
+
+public sealed class BookingDbContext(DbContextOptions<BookingDbContext> options) : DbContext(options)
+{
+    public DbSet<ProfessionalProfile> Professionals => Set<ProfessionalProfile>();
+    public DbSet<Service> Services => Set<Service>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProfessionalProfile>(entity =>
+        {
+            entity.ToTable("professionals");
+            entity.HasKey(profile => profile.Id);
+            entity.Property(profile => profile.DisplayName).HasMaxLength(200).IsRequired();
+            entity.Property(profile => profile.TimeZoneId).HasMaxLength(100).IsRequired();
+            entity.HasIndex(profile => profile.DisplayName);
+            entity.HasMany(profile => profile.Services).WithOne().HasForeignKey(service => service.ProfessionalId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Service>(entity =>
+        {
+            entity.ToTable("services");
+            entity.HasKey(service => service.Id);
+            entity.Property(service => service.Name).HasMaxLength(200).IsRequired();
+            entity.Property(service => service.Price).HasPrecision(18, 2);
+            entity.HasIndex(service => new { service.ProfessionalId, service.Name }).IsUnique();
+        });
+    }
+}
