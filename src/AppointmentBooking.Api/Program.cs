@@ -2,6 +2,11 @@ using AppointmentBooking.Infrastructure;
 using AppointmentBooking.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using AppointmentBooking.Infrastructure.Auth;
+using AppointmentBooking.Domain;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,12 +14,27 @@ builder.Services.AddProblemDetails();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true, ValidIssuer = jwtOptions.Issuer,
+        ValidateAudience = true, ValidAudience = jwtOptions.Audience,
+        ValidateIssuerSigningKey = true, IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey)),
+        ValidateLifetime = true, ClockSkew = TimeSpan.FromSeconds(30)
+    };
+});
+builder.Services.AddAuthorization(options => options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin")));
 builder.Services.AddHealthChecks().AddDbContextCheck<BookingDbContext>("database");
 
 var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
@@ -33,7 +53,7 @@ if (app.Configuration.GetValue("Database:ApplyMigrations", false))
     // EnsureCreated keeps the first vertical slice runnable while the checked-in
     // migration is introduced in the persistence milestone.
     await dbContext.Database.EnsureCreatedAsync();
-    await BookingDbSeeder.SeedAsync(dbContext);
+    await BookingDbSeeder.SeedAsync(dbContext, scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.IPasswordHasher<UserAccount>>());
 }
 
 app.Run();

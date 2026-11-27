@@ -4,7 +4,7 @@ A production-minded ASP.NET Core API for professional appointment booking. The c
 
 ## Current milestone
 
-Foundation is in place: modular solution layout, PostgreSQL, EF Core persistence, health endpoints, a seeded professional/service, and professional catalog endpoints. Booking, availability, authentication, and reminders come next.
+Foundation and Milestone 2 are in place: modular solution layout, PostgreSQL, EF Core persistence, health endpoints, seeded professional/service, JWT authentication, role policies, and professional catalog endpoints.
 
 ## Run locally
 
@@ -27,6 +27,15 @@ GET http://localhost:5180/health/live
 GET http://localhost:5180/health/ready
 GET http://localhost:5180/api/professionals
 ```
+
+Register and authenticate:
+
+```bash
+curl -X POST http://localhost:5180/api/auth/register -H 'Content-Type: application/json' \
+  -d '{"email":"customer@example.com","displayName":"Ava Customer","password":"Pass123!"}'
+```
+
+The development seed creates `admin@example.com` with password `Admin123!ChangeMe`; change it before any shared deployment. Set `Jwt__SigningKey` through an environment variable or secret store outside local development.
 
 ## Architecture
 
