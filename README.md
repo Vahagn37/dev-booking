@@ -4,7 +4,7 @@ A production-minded ASP.NET Core API for professional appointment booking. The c
 
 ## Current milestone
 
-Foundation and Milestone 2 are in place: modular solution layout, PostgreSQL, EF Core persistence, health endpoints, seeded professional/service, JWT authentication, role policies, and professional catalog endpoints.
+Foundation, Milestone 2, and Milestone 3 are in place: modular solution layout, PostgreSQL, EF Core persistence, health endpoints, seeded professional/service, JWT authentication, role policies, professional catalog endpoints, weekly working hours, and time-off scheduling.
 
 ## Run locally
 
