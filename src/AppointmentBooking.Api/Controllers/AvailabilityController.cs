@@ -1,3 +1,4 @@
+using AppointmentBooking.Domain;
 using AppointmentBooking.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +30,9 @@ public sealed class AvailabilityController(BookingDbContext db) : ControllerBase
         var zone = FindTimeZone(professional.TimeZoneId);
         var hours = await db.WorkingHours.AsNoTracking().Where(h => h.ProfessionalId == professionalId).ToListAsync(cancellationToken);
         var timeOff = await db.TimeOff.AsNoTracking().Where(t => t.ProfessionalId == professionalId).ToListAsync(cancellationToken);
+        var appointments = await db.Appointments.AsNoTracking()
+            .Where(a => a.ProfessionalId == professionalId && a.Status != AppointmentStatus.Cancelled)
+            .ToListAsync(cancellationToken);
         var slots = new List<AvailabilitySlot>();
         for (var date = from; date <= to; date = date.AddDays(1))
         {
@@ -44,6 +48,12 @@ public sealed class AvailabilityController(BookingDbContext db) : ControllerBase
                     {
                         continue;
                     }
+
+                    if (appointments.Any(appointment => startUtc < appointment.EndsAtUtc && endUtc > appointment.StartsAtUtc))
+                    {
+                        continue;
+                    }
+
                     slots.Add(new AvailabilitySlot(startUtc, endUtc, localDateTime));
                 }
             }

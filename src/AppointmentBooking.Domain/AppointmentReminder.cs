@@ -30,4 +30,17 @@ public sealed class AppointmentReminder
         Attempts++;
         LastError = error;
     }
+
+    public void Reschedule(DateTimeOffset scheduledForUtc)
+    {
+        ScheduledForUtc = scheduledForUtc.ToUniversalTime();
+        SentAtUtc = null;
+        LastError = null;
+    }
+
+    public void Cancel()
+    {
+        SentAtUtc = DateTimeOffset.UtcNow;
+        LastError = "Appointment cancelled.";
+    }
 }

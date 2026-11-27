@@ -67,6 +67,14 @@ public sealed class AppointmentsController(BookingDbContext db) : ControllerBase
         }
 
         appointment.Cancel();
+        var reminder = await db.AppointmentReminders.SingleOrDefaultAsync(
+            value => value.AppointmentId == appointment.Id && value.SentAtUtc == null,
+            cancellationToken);
+
+        if (reminder is not null)
+        {
+            reminder.Cancel();
+        }
         await db.SaveChangesAsync(cancellationToken);
         return NoContent();
     }
@@ -110,6 +118,14 @@ public sealed class AppointmentsController(BookingDbContext db) : ControllerBase
         try
         {
             appointment.Reschedule(starts, ends);
+            var reminder = await db.AppointmentReminders.SingleOrDefaultAsync(
+                value => value.AppointmentId == appointment.Id,
+                cancellationToken);
+
+            if (reminder is not null)
+            {
+                reminder.Reschedule(starts.AddHours(-24));
+            }
             await db.SaveChangesAsync(cancellationToken);
         }
         catch (InvalidOperationException exception)
