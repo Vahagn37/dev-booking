@@ -11,11 +11,21 @@ public sealed class AvailabilityController(BookingDbContext db) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<AvailabilityResponse>> Get(Guid professionalId, [FromQuery] Guid serviceId, [FromQuery] DateOnly from, [FromQuery] DateOnly to, CancellationToken cancellationToken)
     {
-        if (to < from) return BadRequest("The 'to' date must not be before the 'from' date.");
-        if (to.DayNumber - from.DayNumber > 31) return BadRequest("Availability searches are limited to 31 days.");
+        if (to < from)
+        {
+            return BadRequest("The 'to' date must not be before the 'from' date.");
+        }
+
+        if (to.DayNumber - from.DayNumber > 31)
+        {
+            return BadRequest("Availability searches are limited to 31 days.");
+        }
         var professional = await db.Professionals.AsNoTracking().SingleOrDefaultAsync(p => p.Id == professionalId && p.IsActive, cancellationToken);
         var service = await db.Services.AsNoTracking().SingleOrDefaultAsync(s => s.Id == serviceId && s.ProfessionalId == professionalId && s.IsActive, cancellationToken);
-        if (professional is null || service is null) return NotFound();
+        if (professional is null || service is null)
+        {
+            return NotFound();
+        }
         var zone = FindTimeZone(professional.TimeZoneId);
         var hours = await db.WorkingHours.AsNoTracking().Where(h => h.ProfessionalId == professionalId).ToListAsync(cancellationToken);
         var timeOff = await db.TimeOff.AsNoTracking().Where(t => t.ProfessionalId == professionalId).ToListAsync(cancellationToken);
@@ -30,7 +40,10 @@ public sealed class AvailabilityController(BookingDbContext db) : ControllerBase
                     if (zone.IsInvalidTime(localDateTime)) continue;
                     var startUtc = new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(localDateTime, zone));
                     var endUtc = startUtc.AddMinutes(service.DurationMinutes);
-                    if (timeOff.Any(block => startUtc < block.EndsAtUtc && endUtc > block.StartsAtUtc)) continue;
+                    if (timeOff.Any(block => startUtc < block.EndsAtUtc && endUtc > block.StartsAtUtc))
+                    {
+                        continue;
+                    }
                     slots.Add(new AvailabilitySlot(startUtc, endUtc, localDateTime));
                 }
             }
@@ -40,8 +53,14 @@ public sealed class AvailabilityController(BookingDbContext db) : ControllerBase
 
     private static TimeZoneInfo FindTimeZone(string id)
     {
-        try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
-        catch (TimeZoneNotFoundException) { return TimeZoneInfo.Utc; }
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(id);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.Utc;
+        }
     }
 }
 
