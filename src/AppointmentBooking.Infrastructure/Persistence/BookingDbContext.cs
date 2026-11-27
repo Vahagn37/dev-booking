@@ -10,6 +10,7 @@ public sealed class BookingDbContext(DbContextOptions<BookingDbContext> options)
     public DbSet<UserAccount> Users => Set<UserAccount>();
     public DbSet<WorkingHours> WorkingHours => Set<WorkingHours>();
     public DbSet<TimeOff> TimeOff => Set<TimeOff>();
+    public DbSet<Appointment> Appointments => Set<Appointment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,6 +62,16 @@ public sealed class BookingDbContext(DbContextOptions<BookingDbContext> options)
             entity.Property(timeOff => timeOff.EndsAtUtc).HasColumnType("timestamp with time zone");
             entity.Property(timeOff => timeOff.Reason).HasMaxLength(500);
             entity.HasIndex(timeOff => new { timeOff.ProfessionalId, timeOff.StartsAtUtc });
+        });
+
+        modelBuilder.Entity<Appointment>(entity =>
+        {
+            entity.ToTable("appointments");
+            entity.HasKey(appointment => appointment.Id);
+            entity.Property(appointment => appointment.StartsAtUtc).HasColumnType("timestamp with time zone");
+            entity.Property(appointment => appointment.EndsAtUtc).HasColumnType("timestamp with time zone");
+            entity.Property(appointment => appointment.Status).HasConversion<string>().HasMaxLength(20);
+            entity.HasIndex(appointment => new { appointment.ProfessionalId, appointment.StartsAtUtc });
         });
     }
 }

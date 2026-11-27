@@ -9,7 +9,9 @@ public enum UserRole
 
 public sealed class UserAccount
 {
-    private UserAccount() { }
+    private UserAccount()
+    {
+    }
 
     public UserAccount(Guid id, string email, string displayName, UserRole role = UserRole.Customer)
     {
@@ -29,5 +31,8 @@ public sealed class UserAccount
     public UserRole Role { get; private set; }
     public bool IsActive { get; private set; }
 
-    public void SetPasswordHash(string passwordHash) => PasswordHash = passwordHash;
+    public void SetPasswordHash(string passwordHash)
+    {
+        PasswordHash = passwordHash;
+    }
 }

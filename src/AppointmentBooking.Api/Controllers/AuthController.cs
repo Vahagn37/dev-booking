@@ -14,9 +14,19 @@ public sealed class AuthController(BookingDbContext db, IPasswordHasher<UserAcco
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request, CancellationToken cancellationToken)
     {
-        if (!IsValidPassword(request.Password)) return BadRequest(new ProblemDetails { Title = "Invalid password", Detail = "Password must be at least 8 characters and include a number and symbol." });
+        if (!IsValidPassword(request.Password))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid password",
+                Detail = "Password must be at least 8 characters and include a number and symbol."
+            });
+        }
         var email = request.Email.Trim().ToLowerInvariant();
-        if (await db.Users.AnyAsync(user => user.Email == email, cancellationToken)) return Conflict(new ProblemDetails { Title = "Email already registered" });
+        if (await db.Users.AnyAsync(user => user.Email == email, cancellationToken))
+        {
+            return Conflict(new ProblemDetails { Title = "Email already registered" });
+        }
         var user = new UserAccount(Guid.NewGuid(), email, request.DisplayName);
         user.SetPasswordHash(hasher.HashPassword(user, request.Password));
         db.Users.Add(user);
@@ -33,7 +43,12 @@ public sealed class AuthController(BookingDbContext db, IPasswordHasher<UserAcco
         return Ok(new AuthResponse(tokens.CreateToken(user), user.Id, user.Email, user.DisplayName, user.Role.ToString()));
     }
 
-    private static bool IsValidPassword(string password) => password.Length >= 8 && password.Any(char.IsDigit) && password.Any(ch => !char.IsLetterOrDigit(ch));
+    private static bool IsValidPassword(string password)
+    {
+        return password.Length >= 8
+            && password.Any(char.IsDigit)
+            && password.Any(character => !char.IsLetterOrDigit(character));
+    }
 }
 
 public sealed record RegisterRequest(string Email, string DisplayName, string Password);
