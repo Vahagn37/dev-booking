@@ -20,6 +20,7 @@ public sealed class Appointment
     public DateTimeOffset StartsAtUtc { get; private set; }
     public DateTimeOffset EndsAtUtc { get; private set; }
     public AppointmentStatus Status { get; private set; }
+    public UserAccount Customer { get; private set; } = null!;
     public void Cancel()
     {
         if (Status == AppointmentStatus.Scheduled)
