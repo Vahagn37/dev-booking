@@ -1,4 +1,5 @@
 using AppointmentBooking.Infrastructure.Persistence;
+using AppointmentBooking.Infrastructure.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,7 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("BookingDatabase")
             ?? throw new InvalidOperationException("Connection string 'BookingDatabase' is required.");
         services.AddDbContext<BookingDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddAuthInfrastructure();
         return services;
     }
 }
