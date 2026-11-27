@@ -50,9 +50,7 @@ if (app.Configuration.GetValue("Database:ApplyMigrations", false))
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-    // EnsureCreated keeps the first vertical slice runnable while the checked-in
-    // migration is introduced in the persistence milestone.
-    await dbContext.Database.EnsureCreatedAsync();
+    await DatabaseInitializer.InitializeAsync(dbContext);
     await BookingDbSeeder.SeedAsync(dbContext, scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.IPasswordHasher<UserAccount>>());
 }
 

@@ -71,6 +71,55 @@ public sealed class AppointmentsController(BookingDbContext db) : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/reschedule")]
+    public async Task<ActionResult<AppointmentResponse>> Reschedule(Guid id, RescheduleAppointmentRequest request, CancellationToken cancellationToken)
+    {
+        var appointment = await db.Appointments.SingleOrDefaultAsync(
+            value => value.Id == id && value.CustomerId == GetUserId(),
+            cancellationToken);
+
+        if (appointment is null)
+        {
+            return NotFound();
+        }
+
+        var service = await db.Services.AsNoTracking().SingleOrDefaultAsync(
+            value => value.Id == appointment.ServiceId && value.IsActive,
+            cancellationToken);
+
+        if (service is null)
+        {
+            return NotFound("Service was not found.");
+        }
+
+        var starts = request.StartsAtUtc.ToUniversalTime();
+        var ends = starts.AddMinutes(service.DurationMinutes);
+        var overlap = await db.Appointments.AnyAsync(
+            value => value.Id != appointment.Id
+                && value.ProfessionalId == appointment.ProfessionalId
+                && value.Status != AppointmentStatus.Cancelled
+                && starts < value.EndsAtUtc
+                && ends > value.StartsAtUtc,
+            cancellationToken);
+
+        if (overlap)
+        {
+            return Conflict("This appointment slot is no longer available.");
+        }
+
+        try
+        {
+            appointment.Reschedule(starts, ends);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return Conflict(exception.Message);
+        }
+
+        return Ok(AppointmentResponse.From(appointment));
+    }
+
     private Guid GetUserId()
     {
         var subject = User.FindFirst("sub")?.Value;
@@ -85,6 +134,7 @@ public sealed class AppointmentsController(BookingDbContext db) : ControllerBase
 }
 
 public sealed record BookAppointmentRequest(Guid ServiceId, DateTimeOffset StartsAtUtc);
+public sealed record RescheduleAppointmentRequest(DateTimeOffset StartsAtUtc);
 public sealed record AppointmentResponse(Guid Id, Guid ProfessionalId, Guid CustomerId, Guid ServiceId, DateTimeOffset StartsAtUtc, DateTimeOffset EndsAtUtc, AppointmentStatus Status)
 {
     public static AppointmentResponse From(Appointment appointment)
