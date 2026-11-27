@@ -36,6 +36,7 @@ public sealed class AppointmentsController(BookingDbContext db) : ControllerBase
         }
         var appointment = new Appointment(Guid.NewGuid(), professional.Id, customerId, service.Id, starts, ends);
         db.Appointments.Add(appointment);
+        db.AppointmentReminders.Add(new AppointmentReminder(Guid.NewGuid(), appointment.Id, starts.AddHours(-24)));
         try
         {
             await db.SaveChangesAsync(cancellationToken);

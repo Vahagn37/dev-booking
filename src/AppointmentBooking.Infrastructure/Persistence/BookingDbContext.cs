@@ -11,6 +11,7 @@ public sealed class BookingDbContext(DbContextOptions<BookingDbContext> options)
     public DbSet<WorkingHours> WorkingHours => Set<WorkingHours>();
     public DbSet<TimeOff> TimeOff => Set<TimeOff>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<AppointmentReminder> AppointmentReminders => Set<AppointmentReminder>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -72,6 +73,18 @@ public sealed class BookingDbContext(DbContextOptions<BookingDbContext> options)
             entity.Property(appointment => appointment.EndsAtUtc).HasColumnType("timestamp with time zone");
             entity.Property(appointment => appointment.Status).HasConversion<string>().HasMaxLength(20);
             entity.HasIndex(appointment => new { appointment.ProfessionalId, appointment.StartsAtUtc });
+            entity.HasOne(appointment => appointment.Customer).WithMany().HasForeignKey(appointment => appointment.CustomerId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AppointmentReminder>(entity =>
+        {
+            entity.ToTable("appointment_reminders");
+            entity.HasKey(reminder => reminder.Id);
+            entity.Property(reminder => reminder.ScheduledForUtc).HasColumnType("timestamp with time zone");
+            entity.Property(reminder => reminder.SentAtUtc).HasColumnType("timestamp with time zone");
+            entity.Property(reminder => reminder.LastError).HasMaxLength(1000);
+            entity.HasIndex(reminder => new { reminder.AppointmentId, reminder.ScheduledForUtc }).IsUnique();
+            entity.HasOne<Appointment>().WithMany().HasForeignKey(reminder => reminder.AppointmentId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
